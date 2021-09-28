@@ -1,19 +1,28 @@
 package com.TierThreeCollege.TierThreeCollegeBackend.Security.JWT;
 
+import com.TierThreeCollege.TierThreeCollegeBackend.Security.JWT.Filters.JwtRequestFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @EnableWebSecurity
 public class JWTConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private MyUserDetailsService myUserDetailsService;
+
+
+    @Autowired
+    JwtRequestFilter jwtRequestFilter;
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         System.out.println("Here It is");
@@ -24,10 +33,12 @@ public class JWTConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        http.csrf().disable().authorizeRequests().antMatchers("/newuser").hasAnyRole("USER","ADMIN")
-                .antMatchers("/authenticate").hasAnyRole("USER","ADMIN")
-                        .antMatchers("/signup").permitAll().
-                and().formLogin();
+        http.csrf().disable().authorizeRequests()
+                .antMatchers("/authenticate").permitAll()
+                        .antMatchers("/signup").permitAll().anyRequest().authenticated().and().sessionManagement()
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
     }
     @Bean
     public PasswordEncoder passwordEncoder()
@@ -35,5 +46,9 @@ public class JWTConfig extends WebSecurityConfigurerAdapter {
         return NoOpPasswordEncoder.getInstance();
     }
 
-
+    @Bean
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
 }
